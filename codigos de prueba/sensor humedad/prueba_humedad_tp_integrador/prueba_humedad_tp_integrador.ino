@@ -1,6 +1,6 @@
 //katz-Katon-Perez-Perez
 
-#define PIN_HUMEDAD 1
+#define PIN_HUMEDAD 15
 //V1.0 Soil_Humidity_Tester  Enjoy!
 void setup() {
   Serial.begin(9600);
