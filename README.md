@@ -1,1 +1,1 @@
-# tp-integrador-1bimestre-st
+#link utilizacion display LCD: https://naylampmechatronics.com/blog/35_tutorial-lcd-con-i2c-controla-un-lcd-con-solo-dos-pines.html
