@@ -1,4 +1,4 @@
-//katz-Katon-Perez-Perez
+  //katz-Katon-Perez-Perez
 
 //incluir la libreria dentro de display LCD en librerias
 #include <LiquidCrystal_I2C.h>
@@ -13,7 +13,7 @@ LiquidCrystal_I2C lcd(0x3F, DISPLAY_WIDTH, DISPLAY_HIGHT);
 
 void setup() {
   // Inicializar el LCD
- //lcd.init();  REVISAR ESTA LINEA SI ALGO NO FUNCIONA
+ lcd.init();  REVISAR ESTA LINEA SI ALGO NO FUNCIONA
 
   //Encender la luz de fondo.
   lcd.backlight();
