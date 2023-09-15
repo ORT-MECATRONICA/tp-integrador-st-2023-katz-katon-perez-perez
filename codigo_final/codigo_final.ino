@@ -1,7 +1,7 @@
 //katz-perez-perez-katon
 //INCLUIMOS LIBRERIAS
-//#include <Wire.h>
-//#include <SPI.h>
+#include <Wire.h>
+#include <SPI.h>
 
 #include <Adafruit_Sensor.h> //libreria general adafruit
 #include <Adafruit_BMP280.h> //libreria sensor temperatura
@@ -11,6 +11,8 @@
 #include <UniversalTelegramBot.h>   // Universal Telegram Bot Library
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
+#include <ESP32Time.h>
+#include "time.h"
 
 //wifi sin web server
 //const char* ssid = "REPLACE_WITH_YOUR_SSID";
@@ -20,10 +22,21 @@
 //CONFIGURACION TELEGRAM
 #define BOTtoken "6524164842:AAGCe368_vFVZWBZ6amrgBrFOzF2XhA8YYY"  //Bot Token
 #define CHAT_ID "5388508527" //Remplazar por tu chat id
-WiFiClientSecure client;
+WiFiClientSecure client; //Revisar linea si el WIFI no funciona
 UniversalTelegramBot bot(BOTtoken, client); //cambiar linea por las credenciales wifi (esto por no usar wificlientsecure)
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
+
+//CONFIGURACION DE LA HORA
+void pedir_lahora(void);
+void setup_rtc_ntp(void);
+struct tm timeinfo;
+ESP32Time rtc;
+/// time
+long unsigned int timestamp; // hora
+long gmtOffset_sec = -10800;
+const int daylightOffset_sec = 0;
+const char *servidor = "south-america.pool.ntp.org";
 
 
 //DEFINIMOS PINES
@@ -47,7 +60,7 @@ LiquidCrystal_I2C lcd(0x3F, DISPLAY_WIDTH, DISPLAY_HIGHT);  // definimos el id I
 #define PIN_BOTON_5
 #define PIN_LED_ROJO
 #define PIN_LED_AMA
-#define PIN_LED_VERDE
+#define PIN_LED_VERDE 
 
 int VU_TEMP = ;
 int VU_HUMEDAD = ;
@@ -62,7 +75,7 @@ int aestadoAlerta = 0;
 void setup() {
   Serial.begin(9600); //inicializo puerto serie
   bmp.begin(); //inicializo I2C del sensor de temperatura
-  lcd.init(); // Inicializar el LCD
+  //lcd.init(); // Inicializar el LCD     REVISAR SI ALGO NO FUNCIONA CON EL DISPLAY
   lcd.backlight(); //Encender la luz de fondo
   pinMode(PIN_RELE, OUTPUT); //configuramos el pin del rele
   pinMode(PIN_LDR, INPUT); //configuramos el pin del ldr
@@ -82,19 +95,26 @@ void setup() {
   WiFi.mode(WIFI_STA); //seteamos el modo del wifi
   WiFiManager wm; //creamos un objeto WM (wifi manager)
   bool respuesta;
-  res = wm.autoConnect("WiFi_server_HuertaIoT","12345"); // password protected ap
-    if(!respuesta) {
-        Serial.println("Failed to connect");
-        // ESP.restart();
-    } 
-    else {
-        //if you get here you have connected to the WiFi    
-        Serial.println("connected");
-    }
+  res = wm.autoConnect("WiFi_server_HuertaIoT", "12345"); // password protected ap
+  if (!respuesta) {
+    Serial.println("Failed to connect");
+    // ESP.restart();
+  }
+  else {
+    //if you get here you have connected to the WiFi
+    Serial.println("connected");
+  }
+
+  setup_rtc_ntp(); //igualo el rtc a la hora del servidor
+  //initWiFi(); descomentar si no funciona el wifi manager
 }
 
 
 void loop() {
+  pedirHora(); //le pido la hora al servidor o al rtc              //gmtOffset_sec = gmtOffset_sec - 3600;  setup_rtc_ntp();  colocar estas lineas para cambiar el valor GMT en config
+  //println(&timeinfo, "%H:%M:%S");  Forma de imprimir solo hora minuto segundo
+
+
   //leemos los 3 sensores
   int lecturaHumedad = analogRead(PIN_HUMEDAD);
   float lecturaTemp = bmp.readTemperature();
@@ -236,4 +256,35 @@ void handleNewMessages(int numNewMessages, int lecturaHumedad, float lecturaTemp
       bot.sendMessage(chat_id, lecturaLdr, "\n");
     }
   }
+}
+
+void setup_rtc_ntp()
+{
+  // init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, servidor);
+  timestamp = time(NULL);
+  rtc.setTime(timestamp + gmtOffset_sec);
+}
+
+void pedirHora()
+{
+  if (!getLocalTime(&timeinfo))
+  {
+    Serial.println("veo la hora del rtc interno ");
+    timestamp = rtc.getEpoch() - gmtOffset_sec;
+    timeinfo = rtc.getTimeStruct();
+    Serial.println(&timeinfo, "%H:%M:%S");
+  }
+  else
+  {
+    Serial.print("NTP Time:");
+    timestamp = time(NULL);
+    Serial.println(&timeinfo, "%H:%M:%S");
+  }
+}
+
+void initWiFi() {
+  WiFi.begin(ssid , password);
+  Serial.println(WiFi.localIP());
+  Serial.println();
 }
