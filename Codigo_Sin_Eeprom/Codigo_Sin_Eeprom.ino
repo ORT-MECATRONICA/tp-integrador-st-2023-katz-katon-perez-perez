@@ -62,8 +62,31 @@ LiquidCrystal_I2C lcd(0x3F, DISPLAY_WIDTH, DISPLAY_HIGHT);  // definimos el id I
 #define PIN_LED_AMA
 #define PIN_LED_VERDE 
 
-int VU_TEMP = ;
-int VU_HUMEDAD = ;
+bool estadoBoton1 = false;
+bool estadoBoton2 = false;
+bool estadoBoton3 = false;}
+
+//Máquina de Estados
+#define PANTALLA_INICIAL 1 
+#define CHECK_BOTON 2   
+#define AJUSTAR_TEMPERATURA 3
+#define AJUSTAR_HUMEDAD 4
+#define AJUSTAR_GMT 5
+
+int lcdColumns = 16;
+int lcdRows = 2;
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  
+
+
+//Estado inicial de la máquina
+int estado = 1;  
+
+//Variables
+int temperaturaUmbral = 0;
+int humedadUmbral = 0;
+int gmt = 0;
+int pantalla = 1;
+
 
 //DEFINO ESTADOS DE LA MAQUINA DE ALERTA
 int aestadoAlerta = 0;
@@ -90,6 +113,11 @@ void setup() {
   pinMode(PIN_LED_VERDE, OUTPUT);
 
   digitalWrite(PIN_LED_VERDE, HIGH); //INICIAMOS CON EL LED VERDE ENCENDIDO
+
+  // initialize LCD
+  lcd.begin();
+  // turn on LCD backlight                      
+  lcd.backlight();
 
   //SETEO WIFI MANAGER
   WiFi.mode(WIFI_STA); //seteamos el modo del wifi
@@ -132,10 +160,288 @@ void loop() {
     lastTimeBotRan = millis();
   }
 
+
+  //Maquina de estados de las pantallas
+
+  switch(estado)
+  {
+    //Pantalla que muestra hora y temperatura
+    case PANTALLA_INICIAL: 
+   
+{      
+    Serial.println("PANTALLA INICIAL"); 
+    delay(2000);
+    pedir_lahora();
+    
+    //IMPRIMIR VALORES EN EL DISPLAY
+
+  lcd.setCursor(0, 0);
+  lcd.print("Temp:");
+
+  lcd.setCursor(5,0);
+  lcd.print(lecturaTemp);
+  
+  lcd.setCursor(9,0);
+  lcd.print("Hum:");
+  
+  lcd.setCursor(13,0);
+  lcd.print(lecturaHumedad);
+
+  lcd.setCursor(0,1);
+  lcd.print("LED:");
+
+  lcd.setCursor(4,1);
+  lcd.print(LecturaLdr);
+
+  lcd.setCursor(9,1);
+  lcd.print("Al:");
+
+  if(estadoAlerta == ALARMA) {
+  lcd.setCursor(12,1);
+  lcd.print("ON");
+  }
+  else {
+  lcd.setCursor(12,1);
+  lcd.print("OFF");
+  }
+     
+    //IMPRIMIR VALORES POR PUERTO SERIE
+    Serial.println(lecturaTemp); 
+    Serial.println(lecturaHumedad); 
+    Serial.println(LecturaLdr);  
+   
+      if(digitalRead(PIN_BOTON_1) == LOW)
+      {
+        estado = CHECK_BOTON;
+      }
+      
+}
+    break;
+
+    case CHECK_BOTON: 
+    { 
+      Serial.println("CHECK BOTON"); 
+
+      //DISPLAY A TEMPERATURA
+      if(digitalRead(PIN_BOTON_1) == HIGH && estadoBoton1 == false)
+      {
+        lcd.clear(); 
+        estadoBoton1 = true;
+        estado = AJUSTAR_TEMPERATURA;
+      }
+
+      //CUALQUIERA A DISPLAY
+      if(digitalRead(PIN_BOTON_1) == HIGH && estadoBoton1 == true)
+      {
+        lcd.clear(); 
+        estadoBoton1 = false;
+        estado = PANTALLA_INICIAL;
+      }
+
+      //TEMPERATURA A HUMEDAD
+      if(digitalRead(PIN_BOTON_4) == HIGH && pantalla == 2)
+      {
+        lcd.clear(); 
+        estado = AJUSTAR_HUMEDAD;
+      }
+
+      //HUMEDAD A GMT
+      if(digitalRead(PIN_BOTON_4) == HIGH && pantalla == 3)
+      {
+        lcd.clear(); 
+        estado = AJUSTAR_GMT;
+      }
+
+      //GMT A TEMPERATURA
+      if(digitalRead(PIN_BOTON_4) == HIGH && pantalla == 1)
+      {
+        lcd.clear(); 
+        estado = AJUSTAR_TEMPERATURA;
+      }
+
+    }
+    break;
+
+    //Pantalla que permite cambiar la temperatura
+    case AJUSTAR_TEMPERATURA: 
+    { 
+
+    Serial.println("AJUSTAR TEMPERATURA");
+    Serial.println(temperaturaUmbral); 
+
+    lcd.setCursor(0, 0);
+    lcd.print("Temp Umbral:");
+
+    lcd.setCursor(0,1);
+    lcd.print(temperaturaUmbral);
+    
+      //SUMA
+      if(digitalRead(PIN_BOTON_2) == LOW) 
+      {
+        estadoBoton2 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+     
+      if(digitalRead(PIN_BOTON_2) == HIGH && estadoBoton2 == true) 
+      {
+        estadoBoton2 = false;
+        Serial.println("BOTON_SUELTO");
+        temperaturaUmbral = temperaturaUmbral++;
+        Serial.println(temperaturaUmbral);  
+        
+      }    
+
+      //RESTA
+      if(digitalRead(PIN_BOTON_3) == LOW)
+      {
+        estadoBoton3 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+      if(digitalRead(PIN_BOTON_3) == HIGH && estadoBoton3 == true)
+      {
+        estadoBoton3 = false;
+        Serial.println("BOTON_SUELTO");
+        temperaturaUmbral = temperaturaUmbral--;
+        Serial.println(temperaturaUmbral);  
+      }    
+      
+      //TEMPERATURA A DISPLAY
+      if(digitalRead(PIN_BOTON_1) == LOW && estadoBoton1 == true) 
+      {
+        estado = CHECK_BOTON;
+      }
+
+      //TEMPERATURA A HUMEDAD
+      if(digitalRead(PIN_BOTON_4) == LOW && pantalla == 1) 
+      {
+        pantalla = 2;
+        estado = CHECK_BOTON;
+      }
+    }
+    break;
+
+    case AJUSTAR_HUMEDAD: 
+    { 
+
+    Serial.println("AJUSTAR HUMEDAD");
+    Serial.println(humedadUmbral); 
+
+     
+    lcd.setCursor(0, 0);
+    lcd.print("Hum Umbral:");
+
+    lcd.setCursor(0,1);
+    lcd.print(HumedadUmbral);
+    
+      //SUMA
+      if(digitalRead(PIN_BOTON_2) == LOW) 
+      {
+        estadoBoton2 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+     
+      if(digitalRead(PIN_BOTON_2) == HIGH && estadoBoton2 == true) 
+      {
+        estadoBoton2 = false;
+        Serial.println("BOTON_SUELTO");
+        humedadUmbral = humedadUmbral++;
+        Serial.println(humedadUmbral);  
+        
+      }    
+
+      //RESTA
+      if(digitalRead(PIN_BOTON_3) == LOW)
+      {
+        estadoBoton3 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+      if(digitalRead(PIN_BOTON_3) == HIGH && estadoBoton3 == true)
+      {
+        estadoBoton3 = false;
+        Serial.println("BOTON_SUELTO");
+        humedadUmbral = humedadUmbral--;
+        Serial.println(humedadUmbral);  
+      }    
+      
+      //HUMEDAD A DISPLAY
+      if(digitalRead(PIN_BOTON_1) == LOW && estadoBoton1 == true) 
+      {
+        estado = CHECK_BOTON;
+      }
+
+      //HUMEDAD A GMT
+      if(digitalRead(PIN_BOTON_4) == LOW && pantalla == 2) 
+      {
+        pantalla = 3;
+        estado = CHECK_BOTON;
+      }
+    }
+    break;
+
+case AJUSTAR_GMT: 
+    { 
+
+    Serial.println("AJUSTAR GMT");
+    Serial.println(gmt);
+
+    
+    lcd.setCursor(0, 0);
+    lcd.print("GMT:");
+
+    lcd.setCursor(0,1);
+    lcd.print(gmt);
+    
+      //SUMA
+      if(digitalRead(PIN_BOTON_2) == LOW) 
+      {
+        estadoBoton2 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+     
+      if(digitalRead(PIN_BOTON_2) == HIGH && estadoBoton2 == true) 
+      {
+        estadoBoton2 = false;
+        Serial.println("BOTON_SUELTO");
+        gmt = gmt++;
+        Serial.println(gmt);  
+        
+      }    
+
+      //RESTA
+      if(digitalRead(PIN_BOTON_3) == LOW)
+      {
+        estadoBoton3 = true;
+        Serial.println("BOTON_PRESIONADO");
+      }
+      if(digitalRead(PIN_BOTON_3) == HIGH && estadoBoton3 == true)
+      {
+        estadoBoton3 = false;
+        Serial.println("BOTON_SUELTO");
+        gmt = gmt--;
+        Serial.println(gmt);  
+      }    
+      
+      //GMT A DISPLAY
+      if(digitalRead(PIN_BOTON_1) == LOW && estadoBoton1 == true) 
+      {
+        estado = CHECK_BOTON;
+      }
+
+      //GMT A TEMPERATURA
+      if(digitalRead(PIN_BOTON_4) == LOW && pantalla == 3) 
+      {
+        pantalla = 1;
+        estado = CHECK_BOTON;
+      }
+    }
+    break;
+
+}
+
   //verificamos el VU de los sensores
   switch (estadoAlerta) {
     case PREGUNTA_VU:
-      if (lecturaHumedad < VU_HUMEDAD || lecturaTemp > VU_TEMP) {
+      if (lecturaHumedad > humedadUmbral || lecturaTemp > temperaturaUmbral) {
         estadoAlerta = ALARMA;
         alertaTelegram();
         digitalWrite(PIN_LED_ROJO, HIGH);
@@ -146,7 +452,7 @@ void loop() {
       }
       break;
     case ALARMA:
-      if (lecturaHumedad > VU_HUMEDAD || lecturaTemp < VU_TEMP) {
+      if (lecturaHumedad > humedadUmbral || lecturaTemp < temperaturaUmbral) {
         estadoAlerta = AVISO;
         digitalWrite(PIN_LED_ROJO, LOW);
         digitalWrite(PIN_LED_AMA, HIGH);
@@ -159,7 +465,7 @@ void loop() {
       }
       break;
     case AVISO:
-      if (lecturaHumedad < VU_HUMEDAD || lecturaTemp > VU_TEMP) {
+      if (lecturaHumedad < humedadUmbral || lecturaTemp > temperaturaUmbral) {
         estadoAlerta = ALARMA;
         alertaTelegram();
         digitalWrite(PIN_LED_ROJO, HIGH);
