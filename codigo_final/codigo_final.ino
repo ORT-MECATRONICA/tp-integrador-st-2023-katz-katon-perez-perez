@@ -40,30 +40,30 @@ const char *servidor = "south-america.pool.ntp.org";
 
 
 //DEFINIMOS PINES
-#define PIN_HUMEDAD  //pin sensor humedad
+#define PIN_HUMEDAD 35//pin sensor humedad
 
-#define PIN_SCL_TEMP //pin scl sensor de temperatura
-#define PIN_SDA_TEMP  //pin sda sensor temperatura
+#define PIN_SCL_TEMP 22//pin scl sensor de temperatura
+#define PIN_SDA_TEMP 21//pin sda sensor temperatura
 Adafruit_BMP280 bmp; // definimos el id I2C del sensor de temp
 
 #define DISPLAY_HIGHT 2
 #define DISPLAY_WIDTH 16
 LiquidCrystal_I2C lcd(0x3F, DISPLAY_WIDTH, DISPLAY_HIGHT);  // definimos el id I2C del sensor del display
 
-#define PIN_RELE
-#define PIN_LDR //pin sensor de luz
-#define PIN_BUZZER
-#define PIN_BOTON_1
-#define PIN_BOTON_2
-#define PIN_BOTON_3
-#define PIN_BOTON_4
-#define PIN_BOTON_5
-#define PIN_LED_ROJO
-#define PIN_LED_AMA
-#define PIN_LED_VERDE 
+#define PIN_RELE 16
+#define PIN_LDR 34//pin sensor de luz
+#define PIN_BUZZER 17
+#define PIN_BOTON_1 13
+#define PIN_BOTON_2 14
+#define PIN_BOTON_3 27
+#define PIN_BOTON_4 32
+#define PIN_BOTON_5 12
+#define PIN_LED_ROJO 25
+#define PIN_LED_AMA 26
+#define PIN_LED_VERDE 33
 
-int VU_TEMP = ;
-int VU_HUMEDAD = ;
+int VU_TEMP = 26;
+int VU_HUMEDAD = 30;
 
 //DEFINO ESTADOS DE LA MAQUINA DE ALERTA
 int aestadoAlerta = 0;
